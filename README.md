@@ -175,20 +175,21 @@ Each recipe must export a function that supports the following parameters:
 ```js
 function(gulp, $, src, dest) {}
 ```
-
-`gulp` - the gulp object
-`$` - an object containing all gulp plugins automatically loaded via your module's `package.json`'s `devDependencies` that start with `gulp-` or `vinyl-`. The keys on this object have had their first word and dash replaced with nothing, and all subsequent dashes replaced with underscores. E.g. `gulp-babel` would get loaded into `$.babel`, and `vinyl-source-stream` into `$.source_stream`
-`src` - relative path to the directory given by the target, e.g. `lib/webapp`
-`dest` - relative path to the directory given by the target, e.g. `dist/webapp`
+- `gulp` - the gulp object
+- `$` - an object containing all gulp plugins automatically loaded via your module's `package.json`'s `devDependencies` that start with 'gulp-' or 'vinyl-'. The keys on this object have had their first word and dash removed, and all subsequent dashes replaced with underscores.
+    - e.g. `gulp-babel` would get loaded into `$.babel`, and `vinyl-source-stream` into `$.source_stream`
+- `src` - relative path to the directory given by the target, e.g. `lib/webapp`
+- `dest` - relative path to the directory given by the target, e.g. `dist/webapp`
 
 #### this:
 When exporting the recipe function, you should use the declarative `function` syntax so that `this` will have:
-
-`.options` - an object that receives any options set on this recipe, the target, and `*` from the gulpfile merged into a single hash
-`.options()` - also a function, that you can call to get the options of another task, such as one of your recipe's dependencies
-`.task` - the name of this particular task, which is the name of the recipe appended with the name of the target, e.g. `browerify-webapp`
-`.deps` - an array of the names of task dependencies that this task was instructed to build by the config
-`.other(other_recipe)` - a function that returns the complete name of another task given the name of its recipe and the current target for the current task, e.g. calling `this.task('clean')` within the `transpile-main` task will return the string `'clean-main'`
+- `.options` - an object that receives any options set on this recipe, the target, and `*` from the gulpfile merged into a single hash
+- `.options()` - also a function, that you can call to get the options of another task, such as one of your recipe's dependencies
+- `.task` - the name of this particular task, which is the name of the recipe appended with the name of the target
+    - e.g. `browerify-webapp`
+- `.deps` - an array of the names of task dependencies that this task was instructed to build by the config
+- `.other(other_recipe)` - a function that returns the complete name of another task given the name of its recipe and the current target for the current task
+    - e.g. `this.other('clean')` within the `transpile-main` task returns the string `'clean-main'`
 
 
 ## For calling soda from `gulpfile.js`:
