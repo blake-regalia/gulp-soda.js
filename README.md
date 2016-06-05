@@ -60,17 +60,17 @@ soda(gulp, {
         ],
     },
     
-	// task options to pass to recipes (accepts various levels)
-	options: {
-		less: { watch: '**/*.less' },
-		jade: { watch: '**/*.jade' },
-		browserify: { watch: '**/*.js' },
-		'transpile-main': {
-		    rename(h_file) {
-		        h_file.basename = 'index.js';
-		    },
-		},
-	},
+    // task options to pass to recipes (accepts various levels)
+    options: {
+        less: { watch: '**/*.less' },
+        jade: { watch: '**/*.jade' },
+        browserify: { watch: '**/*.js' },
+        'transpile-main': {
+            rename(h_file) {
+                h_file.basename = 'index.js';
+            },
+        },
+    },
 });
 ```
 
@@ -130,39 +130,42 @@ Continuing the above example, `develop.js` could look like this:
 ```js
 const path = require('path');
 module.exports = function(gulp, $, p_src) {
-	// each dependency..
-	this.deps.forEach((s_dep) => {
-		// make glob path for files to watch
-		let p_watch = path.join(p_src, this.options(s_dep).watch || '**/*');
+    // each dependency..
+    this.deps.forEach((s_dep) => {
+        // fetch task info of dependency
+        let h_friend = this.friend(s_dep);
+        
+        // make glob path for files to watch
+        let p_watch = path.join(h_friend.src, h_friend.options.watch || '**/*');
 
-		// debug print using `gulp-util` plugin (automatically loaded via devDependencies)
-		$.util.log($.util.colors.magenta(`watching ${p_watch}...`));
+        // debug print using `gulp-util` plugin (automatically loaded via devDependencies)
+        $.util.log($.util.colors.magenta(`watching ${p_watch}...`));
 
-		// watch those files and run dependent task
-		gulp.watch(p_watch, [s_dep]);
-	});
+        // watch those files and run dependent task
+        gulp.watch(p_watch, [s_dep]);
+    });
 };
 ```
 
 And `transpile.js` could look like this:
 ```js
 module.exports = function(gulp, $, p_src, p_dest) {
-	// load all javascript source files
-	return gulp.src(p_src+'/**/*.js')
-		// lint all javascript source files
-		.pipe($.eslint())
-		.pipe($.eslint.format())
+    // load all javascript source files
+    return gulp.src(p_src+'/**/*.js')
+        // lint all javascript source files
+        .pipe($.eslint())
+        .pipe($.eslint.format())
 
-		// preserve mappings to source files for debugging
-		.pipe($.sourcemaps.init())
-			.pipe($.babel())  // transpile
-		.pipe($.sourcemaps.write())
+        // preserve mappings to source files for debugging
+        .pipe($.sourcemaps.init())
+            .pipe($.babel())  // transpile
+        .pipe($.sourcemaps.write())
 
-		// optionally rename output
-		.pipe($.if(this.options.rename, $.rename(this.options.rename)))
+        // optionally rename output
+        .pipe($.if(this.options.rename, $.rename(this.options.rename)))
 
-		// write output to dist directory
-		.pipe(gulp.dest(p_dest));
+        // write output to dist directory
+        .pipe(gulp.dest(p_dest));
 };
 ```
 
@@ -178,18 +181,24 @@ function(gulp, $, src, dest) {}
 - `gulp` - the gulp object
 - `$` - an object containing all gulp plugins automatically loaded via your module's `package.json`'s `devDependencies` that start with 'gulp-' or 'vinyl-'. The keys on this object have had their first word and dash removed, and all subsequent dashes replaced with underscores.
     - e.g. `gulp-babel` would get loaded into `$.babel`, and `vinyl-source-stream` into `$.source_stream`
-- `src` - relative path to the directory given by the target, e.g. `lib/webapp`
-- `dest` - relative path to the directory given by the target, e.g. `dist/webapp`
+- `src` - relative path to the input directory given by the target, e.g. `lib/webapp`
+    - > Note: if this task's options object includes a `.src` key, then that value is appended to this string
+- `dest` - relative path to the output directory given by the target, e.g. `dist/webapp`
 
 #### this:
 When exporting the recipe function, you should use the declarative `function` syntax so that `this` will have:
 - `.options` - an object that receives any options set on this recipe, the target, and `*` from the gulpfile merged into a single hash
-- `.options()` - also a function, that you can call to get the options of another task, such as one of your recipe's dependencies
 - `.task` - the name of this particular task, which is the name of the recipe appended with the name of the target
     - e.g. `browerify-webapp`
 - `.deps` - an array of the names of task dependencies that this task was instructed to build by the config
 - `.other(other_recipe)` - a function that returns the complete name of another task given the name of its recipe and the current target for the current task
     - e.g. `this.other('clean')` within the `transpile-main` task returns the string `'clean-main'`
+- `.friend(other_task)` - a function you can call to get the info of another task, such as one of your recipe's dependencies
+    - the object it returns has:
+    - `.src` - relative path to the input directory given by the other task's target
+    - `.dest` - relative path to the output directory given by the other task's target
+    - `.deps` - an array of the names of task dependencies the other task was/will-be instructed to build
+    - `.options` - options object of the other task
 
 
 ## For calling soda from `gulpfile.js`:
@@ -203,8 +212,8 @@ soda(gulp, {
     plugins: {
         pattern: /^(gulp|vinyl)\-/,  // regex to filter which dev dependencies to load
         transform: (s_dep) => {  // function to transform plugin's file name to key name
-        	return s_dep.replace(/^(\w+)\-(.+)$/, '$2')
-        		.replace(/\-/g, '_');
+            return s_dep.replace(/^(\w+)\-(.+)$/, '$2')
+                .replace(/\-/g, '_');
         },
     },
     
@@ -238,7 +247,8 @@ soda(gulp, {
         },
         //   using a recipe name as a key will make the object's keys available for any of those recipes
         //   using a full target as a key will make the object's keys available for only that specific task
-        //  [full target options] override [recipe options] override [* options]
+        // [full target options] override [recipe options] override [* options]
+        // if there is a `.src` key present in the options of any task, it will be appended to the `src` argument when that task is run
     },
     
     aliases: {
