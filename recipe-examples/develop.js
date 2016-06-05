@@ -1,12 +1,13 @@
 const path = require('path');
 
-module.exports = function(gulp, $, p_src, p_dest) {
+module.exports = function(gulp, $) {
 
 	// each dependency
-	a_deps.forEach((s_dep) => {
+	this.deps.forEach((s_dep) => {
 
 		// make glob path for files to watch
-		let p_watch = path.join(p_src, this.options(s_dep).watch || '**/*');
+		let h_friend = this.friend(s_dep);
+		let p_watch = path.join(h_friend.src, h_friend.options.watch || '**/*');
 
 		// debug print
 		$.util.log($.util.colors.magenta(`watching ${p_watch}...`));
