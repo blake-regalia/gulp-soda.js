@@ -12,9 +12,11 @@ $ npm i -D gulp-soda
 
 ## Example
 
-Your project root should look something like this
+Your project root could look something like this
 ```
-├─ dist/                      # production output
+├─ dist/                      # generic production output
+├─ dist.es5/                  # production output exclusively for es5
+├─ dist.es6/                  # production output exclusively for es6
 ├─ gulp/                      # gulp recipes
 |   ├─ transpile.js           #  a recipe for transpiling es6 => es5
 |   └─ develop.js             #  a recipe to watch source files and recompile on changes
@@ -26,6 +28,7 @@ Your project root should look something like this
 |   └─ .../                   # possibly other types of builds
 ├─ node_modules/
 ├─ gulpfile.js
+├─ index.js                   # the entry point of your module, which routes to dist.es5/ or dist.es6/ depending on node version
 └─ package.json
 ```
 
@@ -43,13 +46,23 @@ soda(gulp, {
     
     // map subdirectories within './lib' to a range
     domain: {
-        main: 'js',
+        main: [  // an array maps a single input dir to multiple outputs
+            'es5: dist.es5',  // the colon `:` indicates a dest dir to override the default
+            'es6: dist.es6',
+        ],
         webapp: 'bundle',
     },
     
     // group recipes into categories
     range: {
-        js: ['transpile' 'develop:transpile'],
+        es5: [
+            'transpile',
+            'develop: transpile',
+        ],
+        es6: [
+            'copy',  // assuming we don't use import and export keywords of es6, no need to transpile
+            'develop: copy',
+        ],
         bundle: [
             '[all]: less jade browserify',  // set default task to run all build tasks
             'less',
@@ -65,11 +78,6 @@ soda(gulp, {
         less: { watch: '**/*.less' },
         jade: { watch: '**/*.jade' },
         browserify: { watch: '**/*.js' },
-        'transpile-main': {
-            rename(h_file) {
-                h_file.basename = 'index.js';
-            },
-        },
     },
 });
 ```
@@ -84,7 +92,8 @@ default
  
 # --- domain target defaults ---
 server
- └─ transpile-server
+ ├─ transpile-server-es5
+ └─ copy-server-es6
 webapp
  └─ all-webapp
  
@@ -96,17 +105,30 @@ jade
 browserify
  └─ browserify-webapp
 transpile
- └─ transpile-server
+ └─ transpile-server-es5
 develop
- ├─ develop-server
+ ├─ develop-server-es5
+ ├─ develop-server-es6
  └─ develop-webapp
 browser-sync
  └─ browser-sync-webapp
 
-# --- lowest level (most specific) tasks ---
+# --- intermediate task groups ---
 transpile-server
+ └─ transpile-server-es5
 develop-server
- └─ transpile-server
+ ├─ develop-server-es5
+ └─ develop-server-es6
+copy-server
+ └─ copy-server-es6
+
+# --- lowest level (most specific) tasks ---
+transpile-server-es5
+develop-server-es5
+ └─ transpile-server-es5
+copy-server-es6
+develop-server-es6
+ └─ copy-server-es6
 less-webapp
 jade-webapp
 browserify-webapp
@@ -212,8 +234,8 @@ soda(gulp, {
     recipes: 'gulp',  // relative path to directory with recipes to load by name
 
     config: {
-    	// an object that is available to all tasks
-    	// while `.options` is task-oriented, `.config` is meant for user settings such as a local port number or endpoint url
+        // an object that is available to all tasks
+        // while `.options` is task-oriented, `.config` is meant for user settings such as a local port number or endpoint url
     },
     
     plugins: {
@@ -227,9 +249,14 @@ soda(gulp, {
     domain: {
         // maps sub-directories to their recipe-list-type, i.e., their 'flavor'
         //   each key is the name of a directory within the source directory
-        //   each value is a string that specifies which 'flavor' describes this target
+        //   each value is either a:
+        //       string that specifies which 'flavor' describes this target
+        //       or an array of those strings to specify multiple outputs
         // e.g. :
-        // main: 'js',
+        // webapp: 'bundle',
+        //   the range target string may contain a colon `:` to indicate different output dirs
+        // e.g.:
+        // main: ['es5: dist.es5', 'es6: dist.es6'],
     },
     
     range: {
@@ -237,7 +264,7 @@ soda(gulp, {
         //   each key is the name of a 'flavor' to use in the `domain` hash
         //   each value is an array of recipes to associate with this flavor
         // e.g.:
-        // js: ['transpile', 'develop: transpile'],
+        // es5: ['transpile', 'develop: transpile'],
         //   the `:` denotes a space-delimited list of recipes to pass as dependencies
         //   you can make empty recipes by using square brackets[] around the recipe name
         // e.g.:
