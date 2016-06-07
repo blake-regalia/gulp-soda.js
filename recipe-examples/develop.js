@@ -16,3 +16,8 @@ module.exports = function(gulp, $) {
 		gulp.watch(p_watch, [s_dep]);
 	});
 };
+
+// ensure that anyone reusing this recipe has the requisite devDependencies
+module.exports.plugins = [
+	'gulp-util',
+];

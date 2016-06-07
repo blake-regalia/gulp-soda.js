@@ -191,6 +191,10 @@ module.exports = function(gulp, $, p_src, p_dest) {
         // write output to dist directory
         .pipe(gulp.dest(p_dest));
 };
+
+// optionally declares to gulp-soda which plugins this recipe uses
+// (very polite in case others reuse this recipe, they will receive warnings if they are missing those plugins as devDependencies)
+module.exports.plugins = ['gulp-eslint', 'gulp-sourcemaps', 'gulp-babel', 'gulp-if', 'gulp-rename'];
 ```
 
 See [recipe-examples/](recipe-examples/) for more useful examples to get you started

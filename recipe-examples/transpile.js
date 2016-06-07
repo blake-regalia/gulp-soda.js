@@ -27,3 +27,14 @@ module.exports = function(gulp, $, p_src, p_dest) {
 		// write output to dist directory
 		.pipe(gulp.dest(p_dest));
 };
+
+// ensure that anyone reusing this recipe has the requisite devDependencies
+module.exports.plugins = [
+	'gulp-plumber',
+	'gulp-cached',
+	'gulp-eslint',
+	'gulp-sourcemaps',
+	'gulp-babel',
+	'gulp-if',
+	'gulp-rename',
+];

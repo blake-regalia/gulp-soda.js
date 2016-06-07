@@ -14,3 +14,8 @@ module.exports = function(gulp, $, p_src, p_dest) {
 		// output
 		.pipe(gulp.dest(p_dest));
 };
+
+// ensure that anyone reusing this recipe has the requisite devDependencies
+module.exports.plugins = [
+	'gulp-rename',
+];
