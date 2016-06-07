@@ -2,6 +2,8 @@
 
 A light-weight solution to store your build tasks as re-usable 'recipes', i.e. task scripts, in a gulp directory from your module's root. Tasks will be automatically generated for you with convenient names at various levels of abstraction via dependency-chaining.
 
+Other gulp plugins are automatically loaded by scanning your package's `devDependencies` array and passed to each recipe when creating tasks.
+
 `gulp-soda` is light-weight since the module itself has no dependencies. It is also optimized for responsiveness, so recipes are lazily required only once a task that needs it is run.
 
 
@@ -53,7 +55,7 @@ soda(gulp, {
         webapp: 'bundle',
     },
     
-    // group recipes into categories
+    // group recipes into 'flavors'
     range: {
         es5: [
             'transpile',
@@ -73,7 +75,7 @@ soda(gulp, {
         ],
     },
     
-    // task options to pass to recipes (accepts various levels)
+    // task options to pass to recipes (keys represent recipe patterns)
     options: {
         less: { watch: '**/*.less' },
         jade: { watch: '**/*.jade' },
@@ -198,7 +200,7 @@ See [recipe-examples/](recipe-examples/) for more useful examples to get you sta
 ## For recipes:
 Each recipe must export a function that supports the following parameters:
 ```js
-function(gulp, $, src, dest) {}
+function(gulp, $, src, dest[, cb]) {}
 ```
 - `gulp` - the gulp object
 - `$` - an object containing all gulp plugins automatically loaded via your module's `package.json`'s `devDependencies` that start with 'gulp-' or 'vinyl-'. The keys on this object have had their first word and dash removed, and all subsequent dashes replaced with underscores.
@@ -206,6 +208,7 @@ function(gulp, $, src, dest) {}
 - `src` - relative path to the input directory given by the target, e.g. `lib/webapp`
     - > Note: if this task's options object includes a `.src` key, then that value is appended to this string
 - `dest` - relative path to the output directory given by the target, e.g. `dist/webapp`
+- `cb` - the optional gulp task callback function to perform asynchronous operations without returning a stream
 
 #### this:
 When exporting the recipe function, you should use the declarative `function` syntax so that `this` will have:
