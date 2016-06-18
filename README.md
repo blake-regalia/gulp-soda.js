@@ -222,6 +222,8 @@ When exporting the recipe function, you should use the declarative `function` sy
 - `.options` - an object that receives any options set on this recipe, the target, and `*` from the gulpfile merged into a single hash
 - `.config` - an object that is global to all tasks, which stores user-settings such as a local port number or endpoint url, etc.
 - `.src_dir` - a string of the relative path to this recipe target's directory, (i.e., without the `.src` option appended from the `.options` object)
+- `.sub_dest` - a function that returns the relative path to a different output directory under the provided destination directory
+    - e.g. `this.sub_dest('other')` will return the relative path to a subdirectory named `other` under the destination directory. Calling `this.sub_dest('')` will simply return the output directory itself
 - `.other(other_recipe)` - a function that returns the complete name of another task given the name of its recipe and the current target for the current task
     - e.g. `this.other('clean')` within the `transpile-main` task returns the string `'clean-main'`
 - `.friend(other_task)` - a function you can call to get the info of another task, such as one of your recipe's dependencies
