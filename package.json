@@ -1,6 +1,6 @@
 {
   "name": "gulp-soda",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A light-weight task-loader and plugin-loader for gulp",
   "author": {
     "name": "Blake Regalia",
