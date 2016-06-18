@@ -23,7 +23,7 @@ Your project root could look something like this
 |   ├─ transpile.js           #  a recipe for transpiling es6 => es5
 |   └─ develop.js             #  a recipe to watch source files and recompile on changes
 ├─ lib/                       # all source files
-|   ├─ main/                  #  your module's export, perhaps
+|   ├─ server/                #  your module's export, perhaps
 |   |   └─ module.js          #   entry point for module
 |   ├─ webapp/                # another type of build (i.e., not just transpiling)
 |   |   └─ ...
@@ -48,7 +48,7 @@ soda(gulp, {
     
     // map subdirectories within './lib' to a range
     domain: {
-        main: [  // an array maps a single input dir to multiple outputs
+        server: [  // an array maps a single input dir to multiple outputs
             'es5: dist.es5',  // the colon `:` indicates a dest dir to override the default
             'es6: dist.es6',
         ],
