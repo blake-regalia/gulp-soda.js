@@ -66,7 +66,8 @@ soda(gulp, {
             'develop: copy',
         ],
         bundle: [
-            '[all]: less jade browserify',  // set default task to run all build tasks
+            // first task is default for that target
+            '[all]: less jade browserify',  // using '[' ']' around the name creates an empty recipe that runs its dependencies
             'less',
             'jade',
             'browserify',
