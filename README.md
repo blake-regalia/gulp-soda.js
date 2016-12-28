@@ -1,11 +1,18 @@
 # gulp-soda
 
-A light-weight solution to store your build tasks as re-usable 'recipes', i.e. task scripts, in a gulp directory from your module's root. Tasks will be automatically generated for you with convenient names at various levels of abstraction via dependency-chaining.
+A config-oriented paradigm for storing gulp build tasks as re-usable 'recipes', i.e. task scripts, in a single directory top from your module's root. Super tasks are automatically derived by grouping together low-level tasks under certain categories.
 
-Other gulp plugins are automatically loaded by scanning your package's `devDependencies` array and passed to each recipe when creating tasks.
+All gulp and vinyl plugins are automatically `require`d and passed to each 'recipe' by scanning the local package.json's `devDependencies`.
 
-`gulp-soda` is light-weight since the module itself has no dependencies. It is also optimized for responsiveness, so recipes are lazily required only once a task that needs it is run.
+This module is optimized for responsiveness; recipes are lazily loaded only once a dependent task is run by the user.
 
+## Recipe dependency management
+You can copy recipe examples from the web, place them in your `gulp/` directory, and then install their dependencies by running `gulp install`.
+
+## Contents
+ * [Example Usage](#example)
+ * [Sample Recipes](recipe-examples/)
+ * [**API Reference**](#reference)
 
 ## Install
 ```sh
@@ -14,23 +21,24 @@ $ npm i -D gulp-soda
 
 ## Example
 
-Your project root could look something like this
+Given the following project directory:
 ```
-├─ dist/                      # generic production output
-├─ dist.es5/                  # production output exclusively for es5
-├─ dist.es6/                  # production output exclusively for es6
+├─ dist.debug/                # unobfuscated (yet pre-compiled) code for debugging
+├─ dist.min/                  # minified production output
+├─ dist.web/                  # for running & serving webapp
 ├─ gulp/                      # gulp recipes
-|   ├─ transpile.js           #  a recipe for transpiling es6 => es5
-|   └─ develop.js             #  a recipe to watch source files and recompile on changes
+|   ├─ browserify.js          #  bundles front-end javascript
+|   ├─ minify.js              #  minify javascript code for node.js
+|   ├─ develop.js             #  watches source files and recompiles on changes
+|   └─ ...                    
 ├─ lib/                       # all source files
-|   ├─ server/                #  your module's export, perhaps
+|   ├─ server/                #  server-side node.js code
 |   |   └─ module.js          #   entry point for module
-|   ├─ webapp/                # another type of build (i.e., not just transpiling)
+|   ├─ webapp/                #  front-end webapp
 |   |   └─ ...
-|   └─ .../                   # possibly other types of builds
+|   └─ .../                   #  other types of builds
 ├─ node_modules/
-├─ gulpfile.js
-├─ index.js                   # the entry point of your module, which routes to dist.es5/ or dist.es6/ depending on node version
+├─ gulpfile.js                # where soda config lives
 └─ package.json
 ```
 
@@ -41,43 +49,43 @@ const gulp = require('gulp');
 const soda = require('gulp-soda');
 
 soda(gulp, {
-    // these are the defaults for the following paths
+    // default paths for inputs (src), outputs (dest), and task scripts (recipes)
     src: 'lib',
-    dest: 'dist',
+    dest: 'dist.debug',
     recipes: 'gulp',
     
-    // map subdirectories within './lib' to a range
-    domain: {
+    // map each directory within './lib' to a (list of) target(s)
+    inputs: {
         server: [  // an array maps a single input dir to multiple outputs
-            'es5: dist.es5',  // the colon `:` indicates a dest dir to override the default
-            'es6: dist.es6',
+            'debug',  // 'debug' is the name of a target
+            'production: dist.min',  // the colon `:` indicates a dest path 'dist.min' (to override the default)
         ],
-        webapp: 'bundle',
+        webapp: 'bundle: dist.web',
     },
     
-    // group recipes into 'flavors'
-    range: {
-        es5: [
-            'transpile',
-            'develop: transpile',
-        ],
-        es6: [
-            'copy',  // assuming we don't use import and export keywords of es6, no need to transpile
+    // define which task scripts (recipes) each compile target can perform
+    targets: {
+        debug: [
+            // 'develop' is a recipe that watches and reruns the given tasks (e.g., copy)
             'develop: copy',
         ],
+        production: [
+            'minify',
+        ],
         bundle: [
-            // first task is default for that target
-            '[all]: less jade browserify',  // using '[' ']' around the name creates an empty recipe that runs its dependencies
+            // the first task is the default for that target
+            '[all]: less jade browserify',  // using '[' ']' around the name creates a psuedo-task that simply runs its dependencies
             'less',
             'jade',
             'browserify',
-            'develop: all',
+            'develop: all',  // enables the task 'develop-webapp'
             'browser-sync: all',
         ],
     },
     
-    // task options to pass to recipes (keys represent recipe patterns)
+    // pass options to recipes (keys act as patterns to match recipe names)
     options: {
+        '*': { port: 8080 },
         less: { watch: '**/*.less' },
         jade: { watch: '**/*.jade' },
         browserify: { watch: '**/*.js' },
@@ -88,50 +96,46 @@ soda(gulp, {
 #### The task list:
 Now, automatically, your gulp task list will look like this:
 ```
+$ gulp --tasks
+
 # --- global default ---
 default
  ├─ server
  └─ webapp
  
-# --- domain target defaults ---
+# --- input dirs defaults ---
 server
- ├─ transpile-server-es5
- └─ copy-server-es6
+ ├─ develop-server
+ └─ minify-server
 webapp
  └─ all-webapp
  
-# --- generic recipe tasks ---
+# --- recipe-directed tasks ---
 less
  └─ less-webapp
 jade
  └─ jade-webapp
 browserify
  └─ browserify-webapp
-transpile
- └─ transpile-server-es5
+minify
+ └─ minify-server
 develop
- ├─ develop-server-es5
- ├─ develop-server-es6
+ ├─ develop-server
  └─ develop-webapp
-browser-sync
- └─ browser-sync-webapp
 
 # --- intermediate task groups ---
-transpile-server
- └─ transpile-server-es5
+minify-server
+ └─ minify-server-production
 develop-server
- ├─ develop-server-es5
- └─ develop-server-es6
+ └─ develop-server-debug
 copy-server
- └─ copy-server-es6
+ └─ copy-server-debug
 
 # --- lowest level (most specific) tasks ---
-transpile-server-es5
-develop-server-es5
- └─ transpile-server-es5
-copy-server-es6
-develop-server-es6
- └─ copy-server-es6
+minify-server-production
+develop-server-debug
+ └─ copy-server-debug
+copy-server-debug
 less-webapp
 jade-webapp
 browserify-webapp
@@ -143,15 +147,11 @@ develop-webapp
  ├─ less-webapp
  ├─ jade-webapp
  └─ browserify-webapp
-browser-sync-webapp
- ├─ less-webapp
- ├─ jade-webapp
- └─ browserify-webapp
 ```
 
-#### Those recipes:
+#### Recipes:
 
-Continuing the above example, `develop.js` could look like this:
+`develop.js` could look like this:
 ```js
 const path = require('path');
 module.exports = function(gulp, $, p_src) {
@@ -170,32 +170,11 @@ module.exports = function(gulp, $, p_src) {
         gulp.watch(p_watch, [s_dep]);
     });
 };
-```
 
-And `transpile.js` could look like this:
-```js
-module.exports = function(gulp, $, p_src, p_dest) {
-    // load all javascript source files
-    return gulp.src(p_src+'/**/*.js')
-        // lint all javascript source files
-        .pipe($.eslint())
-        .pipe($.eslint.format())
-
-        // preserve mappings to source files for debugging
-        .pipe($.sourcemaps.init())
-            .pipe($.babel())  // transpile
-        .pipe($.sourcemaps.write())
-
-        // optionally rename output
-        .pipe($.if(this.options.rename, $.rename(this.options.rename)))
-
-        // write output to dist directory
-        .pipe(gulp.dest(p_dest));
-};
-
-// optionally declares to gulp-soda which plugins this recipe uses
-// (very polite in case others reuse this recipe, they will receive warnings if they are missing those plugins as devDependencies)
-module.exports.plugins = ['gulp-eslint', 'gulp-sourcemaps', 'gulp-babel', 'gulp-if', 'gulp-rename'];
+// declares which third-party packages this recipe requires
+module.exports.dependencies = [
+    'gulp-util',
+];
 ```
 
 See [recipe-examples/](recipe-examples/) for more useful examples to get you started
@@ -208,7 +187,7 @@ Each recipe must export a function that supports the following parameters:
 function(gulp, $, src, dest[, cb]) {}
 ```
 - `gulp` - the gulp object
-- `$` - an object containing all gulp plugins automatically loaded via your module's `package.json`'s `devDependencies` that start with 'gulp-' or 'vinyl-'. The keys on this object have had their first word and dash removed, and all subsequent dashes replaced with underscores.
+- `$` - an object containing all gulp and vinyl plugins automatically loaded via your module's `package.json`'s `devDependencies` that start with 'gulp-' or 'vinyl-'. The keys on this object have had their first word and dash removed, and all subsequent dashes replaced with underscores.
     - e.g. `gulp-babel` would get loaded into `$.babel`, and `vinyl-source-stream` into `$.source_stream`
 - `src` - relative path to the input directory given by the target, e.g. `lib/webapp`
     - > Note: if this task's options object includes a `.src` key, then that value is appended to this string
@@ -256,34 +235,34 @@ soda(gulp, {
         },
     },
     
-    domain: {
-        // maps sub-directories to their recipe-list-type, i.e., their 'flavor'
-        //   each key is the name of a directory within the source directory
+    inputs: {
+        // maps source directories to their transformation targets
+        //   each key is the name of a subdirectory within the source directory (e.g., ./lib/*/)
         //   each value is either a:
-        //       string that specifies which 'flavor' describes this target
+        //       string that specifies which 'target' to use for this directory
         //       or an array of those strings to specify multiple outputs
         // e.g. :
         // webapp: 'bundle',
-        //   the range target string may contain a colon `:` to indicate different output dirs
+        //   OR, the target string may contain a colon `:` to manually specify the output dir(s)
         // e.g.:
-        // main: ['es5: dist.es5', 'es6: dist.es6'],
+        // main: ['debug: dist.debug', 'production: dist.min'],
     },
     
-    range: {
-        // associates recipes to 'flavors'
-        //   each key is the name of a 'flavor' to use in the `domain` hash
-        //   each value is an array of recipes to associate with this flavor
+    targets: {
+        // defines transformations by combining recipes
+        //   each key is the name of a 'target'
+        //   each value is an array of recipes to associate with this target
         // e.g.:
-        // es5: ['transpile', 'develop: transpile'],
+        // debug: ['copy', 'develop: copy'],
         //   the `:` denotes a space-delimited list of recipes to pass as dependencies
-        //   you can make empty recipes by using square brackets[] around the recipe name
+        //   you can make pseudo-targets by using square brackets[] around the name
         // e.g.:
         // bundle: [ '[all]: less jade browserify', 'less', ... ],
         //   which is useful for creating tasks that simply run their dependencies
     },
     
     options: {
-        // passes options to recipes via their `this.options`
+        // passes options to recipes via `this.options`
         //   each key is a task-pattern that specifies which recipe(s) to give options to
         //   each value is an object whose keys will be made available to the recipe under `this.options`
         '*': {

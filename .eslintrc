@@ -129,7 +129,7 @@
 		"no-spaced-func": 2,
 		"no-trailing-spaces": 1,
 		"no-underscore-dangle": [
-			2,
+			1,
 			{
 				"allow": ["__proto__", "_private", "__esModule"]
 			}
