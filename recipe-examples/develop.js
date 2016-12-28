@@ -17,6 +17,6 @@ module.exports = function(gulp, $) {
 };
 
 // ensure that anyone reusing this recipe has the requisite devDependencies
-module.exports.plugins = [
+module.exports.dependencies = [
 	'gulp-util',
 ];

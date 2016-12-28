@@ -42,7 +42,7 @@ module.exports = function(gulp, $, p_src, p_dest) {
 };
 
 // ensure that anyone reusing this recipe has the requisite devDependencies
-module.exports.plugins = [
+module.exports.dependencies = [
 	'babelify',
 	'browserify',
 	'envify',
