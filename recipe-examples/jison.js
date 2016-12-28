@@ -3,13 +3,14 @@ const fs = require('fs');
 const glob = require('glob');
 const through = require('through2');
 
-const jison_generator = require('jison').Generator;
+const jison = require('jison');
 const ebnf_parser = require('ebnf-parser');
 const lex_parser = require('lex-parser');
 
 
 // module
 module.exports = function(gulp, $, p_src, p_dest) {
+	const jison_generator = jison.Generator;
 
 	// resolve lex file
 	let p_lex_file = glob.sync(p_src+'/*.jisonlex')[0];
@@ -82,8 +83,13 @@ module.exports = function(gulp, $, p_src, p_dest) {
 
 // ensure that anyone reusing this recipe has the requisite devDependencies
 module.exports.plugins = [
+	'glob',
+	'through2',
+	'jison',
+	'ebnf-parser',
+	'lex-parser',
 	'gulp-plumber',
 	'gulp-cached',
-	'gulp-rename',
 	'gulp-util',
+	'gulp-rename',
 ];

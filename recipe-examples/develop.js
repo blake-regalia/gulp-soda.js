@@ -4,7 +4,6 @@ module.exports = function(gulp, $) {
 
 	// each dependency
 	this.deps.forEach((s_dep) => {
-
 		// make glob path for files to watch
 		let h_friend = this.friend(s_dep);
 		let p_watch = path.join(h_friend.src, h_friend.options.watch || '**/*');

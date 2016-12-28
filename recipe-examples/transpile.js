@@ -17,7 +17,7 @@ module.exports = function(gulp, $, p_src, p_dest) {
 		// preserve mappings to source files for debugging
 		.pipe($.sourcemaps.init())
 
-			// transpile
+			// transpile es6 => es5
 			.pipe($.babel())
 		.pipe($.sourcemaps.write())
 
